@@ -27,8 +27,7 @@ pub struct ClientConfig {
     ws_url: String,
     payer_path: String,
     admin_path: String,
-    raydium_cp_program: Pubkey,
-    slippage: f64,
+    cpmm_lp_lock_program: Pubkey,
 }
 
 fn load_cfg(client_config: &String) -> Result<ClientConfig> {
@@ -51,20 +50,18 @@ fn load_cfg(client_config: &String) -> Result<ClientConfig> {
         panic!("admin_path must not be empty");
     }
 
-    let raydium_cp_program_str = config.get("Global", "raydium_cp_program").unwrap();
-    if raydium_cp_program_str.is_empty() {
+    let cpmm_lp_lock_program_str = config.get("Global", "cpmm_lp_lock_program").unwrap();
+    if cpmm_lp_lock_program_str.is_empty() {
         panic!("raydium_cp_program must not be empty");
     }
-    let raydium_cp_program = Pubkey::from_str(&raydium_cp_program_str).unwrap();
-    let slippage = config.getfloat("Global", "slippage").unwrap().unwrap();
+    let cpmm_lp_lock_program = Pubkey::from_str(&cpmm_lp_lock_program_str).unwrap();
 
     Ok(ClientConfig {
         http_url,
         ws_url,
         payer_path,
         admin_path,
-        raydium_cp_program,
-        slippage,
+        cpmm_lp_lock_program,
     })
 }
 
@@ -122,7 +119,7 @@ fn main() -> Result<()> {
     let url = Cluster::Custom(anchor_config.http_url, anchor_config.ws_url);
     let wallet = read_keypair_file(&pool_config.payer_path)?;
     let anchor_client = Client::new(url, Rc::new(wallet));
-    let program = anchor_client.program(pool_config.raydium_cp_program)?;
+    let program = anchor_client.program(pool_config.cpmm_lp_lock_program)?;
 
     let opts = Opts::parse();
     match opts.command {

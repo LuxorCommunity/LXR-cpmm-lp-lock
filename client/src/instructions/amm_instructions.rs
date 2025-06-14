@@ -29,7 +29,7 @@ pub fn lock_lp_instr(
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
     // Client.
     let client = Client::new(url, Rc::new(payer));
-    let program = client.program(config.raydium_cp_program)?;
+    let program = client.program(config.cpmm_lp_lock_program)?;
 
     let (lock_vault_authority, __bump) =
         Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
@@ -75,7 +75,7 @@ pub fn lock_lp_perm_instr(
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
     // Client.
     let client = Client::new(url, Rc::new(payer));
-    let program = client.program(config.raydium_cp_program)?;
+    let program = client.program(config.cpmm_lp_lock_program)?;
 
     let (lock_vault_authority, __bump) =
         Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
@@ -117,7 +117,7 @@ pub fn unlock_lp_instr(
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
     // Client.
     let client = Client::new(url, Rc::new(payer));
-    let program = client.program(config.raydium_cp_program)?;
+    let program = client.program(config.cpmm_lp_lock_program)?;
 
     let (lock_vault_authority, __bump) =
         Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
@@ -161,7 +161,7 @@ pub fn collect_fees_instr(
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
     // Client.
     let client = Client::new(url, Rc::new(payer));
-    let program = client.program(config.raydium_cp_program)?;
+    let program = client.program(config.cpmm_lp_lock_program)?;
 
     let (lock_vault_authority, __bump) =
         Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());

@@ -110,7 +110,15 @@ pub fn lock_lp(
     lock_duration: u64,
     lock_permanent: bool,
 ) -> Result<()> {
-    require_gt!(amount, 0);
+    require!(amount > 100,ErrorCode::InitLpAmountTooLess);
+
+    if !lock_permanent {
+        require!(
+            lock_duration < 15_76_80_000,
+            ErrorCode::LockDurationTooLong
+        );
+    }
+
     let lp_lock_counter = &mut ctx.accounts.lp_lock_counter;
     let user_lock = &mut ctx.accounts.user_lp_lock;
 
@@ -122,7 +130,9 @@ pub fn lock_lp(
         lp_lock_counter.total_lock_amount = 0;
     }
 
-    let new_lock_count = lp_lock_counter.total_lock_count + 1;
+    let new_lock_count = lp_lock_counter.total_lock_count
+        .checked_add(1)
+        .ok_or(ErrorCode::Overflow)?;
 
     create_token_account(
         &ctx.accounts.lock_vault_authority.to_account_info(),
@@ -167,7 +177,9 @@ pub fn lock_lp(
     let unlock_time = if lock_permanent {
         0
     } else {
-        block_timestamp + lock_duration
+        block_timestamp
+            .checked_add(lock_duration)
+            .ok_or(ErrorCode::Overflow)?
     };
 
     let pool_state_info = &ctx.accounts.pool_state;
@@ -189,6 +201,9 @@ pub fn lock_lp(
         RoundDirection::Floor,
     )
     .ok_or(ErrorCode::ZeroTradingTokens)?;
+
+    require_gt!(results.token_0_amount, 0);
+    require_gt!(results.token_1_amount, 0);
 
     let liquidity = U128::from(results.token_0_amount)
         .checked_mul(results.token_1_amount.into())

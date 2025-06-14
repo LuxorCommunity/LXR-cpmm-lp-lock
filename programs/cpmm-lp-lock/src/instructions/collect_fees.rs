@@ -10,6 +10,7 @@ use anchor_lang::prelude::borsh::BorshSerialize;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use anchor_spl::token_2022::Token2022;
+use anchor_spl::memo::spl_memo;
 use anchor_spl::token_interface::{Mint, TokenAccount};
 use anchor_lang::{solana_program::clock};
 use anchor_lang::{solana_program::{instruction::Instruction, program::{invoke}}};
@@ -77,6 +78,7 @@ pub struct CollectFees<'info> {
     #[account(
         mut,
         constraint = user_lp_lock.user == owner.key(),
+        constraint = user_lp_lock.lp_mint == lp_mint.key(),
     )]
     pub user_lp_lock: Box<Account<'info, UserLock>>,
 
@@ -174,6 +176,9 @@ pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
         ctx.accounts.token_1_vault.amount,
     );
 
+    msg!("Total token 0 amount in the pool: {}", total_token_0_amount);
+    msg!("Total token 1 amount in the pool: {}", total_token_1_amount);
+
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(user_lock.lock_amount),
         u128::from(pool_state.lp_supply),
@@ -183,19 +188,31 @@ pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
     )
     .ok_or(ErrorCode::ZeroTradingTokens)?;
 
+    msg!("Locked LP amount: {}", user_lock.lock_amount);
+    msg!("Token 0 amount belongs to locked LP: {}", results.token_0_amount);
+    msg!("Token 1 amount belongs to locked LP: {}", results.token_1_amount);
+
     let liquidity = U128::from(results.token_0_amount)
         .checked_mul(results.token_1_amount.into())
         .unwrap()
         .integer_sqrt()
         .as_u64();
+
+    msg!("Liquidity belongs to locked LP: {}", liquidity);
+
+    require_gt!(liquidity, 0, ErrorCode::ZeroLiquidity);
+
+    msg!("Principal liquidity : {}", user_lock.principal_liquidity);
     let updated_principal_lp_tokens = U128::from(user_lock.principal_liquidity)
         .checked_mul(user_lock.lock_amount.into())
         .unwrap()
         .checked_div(liquidity.into())
         .unwrap().as_u64();
+    msg!("Updated principal LP tokens: {}", updated_principal_lp_tokens);
     let lp_tokens_to_burn = user_lock.lock_amount
         .checked_sub(updated_principal_lp_tokens)
         .ok_or(ErrorCode::Overflow)?;
+    msg!("LP tokens to burn: {}", lp_tokens_to_burn);
     require_gt!(lp_tokens_to_burn, 0, ErrorCode::ZeroLpTokensToBurn);
 
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
@@ -207,11 +224,22 @@ pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
     )
     .ok_or(ErrorCode::ZeroTradingTokens)?;
 
+    msg!("Token 0 amount belongs to lp to burn: {}", results.token_0_amount);
+    msg!("Token 1 amount belongs to lp to burn {}", results.token_1_amount);
+
     let token_0_amount = u64::try_from(results.token_0_amount).unwrap();
     let token_0_amount = std::cmp::min(total_token_0_amount, token_0_amount);
 
     let token_1_amount = u64::try_from(results.token_1_amount).unwrap();
     let token_1_amount = std::cmp::min(total_token_1_amount, token_1_amount);
+
+    msg!("Final token 0 amount to receive: {}", token_0_amount);
+    msg!("Final token 1 amount to receive: {}", token_1_amount);
+
+    require!(
+        token_0_amount > 0 && token_1_amount > 0,
+        ErrorCode::ZeroTradingTokens
+    );
 
     // update user lock
     user_lock.lock_amount = updated_principal_lp_tokens;

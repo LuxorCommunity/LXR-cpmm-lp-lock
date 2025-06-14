@@ -52,4 +52,13 @@ pub enum ErrorCode {
 
     #[msg("Calculated LP tokens to burn is zero")]
     ZeroLpTokensToBurn,
+
+    #[msg("The provided lock duration exceeds the maximum allowed limit")]
+    LockDurationTooLong,
+
+    #[msg("Underflow occurred")]
+    UnderflowError,
+
+    #[msg("Zero liquidity in the pool")]
+    ZeroLiquidity,
 }

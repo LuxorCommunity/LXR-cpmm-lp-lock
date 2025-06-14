@@ -65,6 +65,7 @@ pub struct UnlockLp<'info> {
     #[account(
         mut,
         constraint = user_lp_lock.user == owner.key(),
+        constraint = user_lp_lock.lp_mint == lp_mint.key(),
     )]
     pub user_lp_lock: Box<Account<'info, UserLock>>,
 
@@ -127,7 +128,10 @@ pub fn unlock_lp(ctx: Context<UnlockLp>) -> Result<()> {
     user_lock.last_updated = block_timestamp;
 
     // update lp lock counter
-    lp_lock_counter.total_lock_amount -= user_lock.lock_amount;
+   lp_lock_counter.total_lock_amount = lp_lock_counter
+    .total_lock_amount
+    .checked_sub(user_lock.lock_amount)
+    .ok_or(ErrorCode::UnderflowError)?;
 
     transfer_from_pool_vault_to_user(
         ctx.accounts.lock_vault_authority.to_account_info(),

@@ -1,20 +1,14 @@
 [toolchain]
-anchor_version = "0.29.0"
-solana_version = "1.17.0"
+anchor_version = "0.31.1"
+solana_version = "2.1.20"
 
 [features]
 seeds = false
 skip-lint = false
 
-# [programs.localnet]
-# raydium_cp_swap = "soTGt6rjUYJjZ1Fxa65wPjehiYvNDDYkY4wvDjyyoW6"
-
-# [registry]
-# url = "https://github.com/raydium-io/raydium-cp-swap"
-
 [provider]
-cluster = "https://api.devnet.solana.com"
-wallet = "/Users/visheshsachdev/.config/solana/team.json"
+cluster = "https://mainnet.helius-rpc.com/?api-key=7293b92a-03dd-435c-b594-e754264f781a"
+wallet = "/Users/visheshsachdev/.config/solana/id.json"
 
 [workspace]
-members = ["programs/cp-swap"]
+members = ["programs/cpmm-lp-lock"]
