@@ -6,6 +6,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use anchor_spl::token_interface::{Mint, TokenAccount};
 use anchor_lang::{solana_program::clock};
+use anchor_spl::token::CloseAccount;
+
 
 #[derive(Accounts)]
 pub struct UnlockLp<'info> {
@@ -143,6 +145,21 @@ pub fn unlock_lp(ctx: Context<UnlockLp>) -> Result<()> {
         ctx.accounts.lp_mint.decimals,
         &[&[crate::AUTH_SEED.as_bytes(), &[ctx.bumps.lock_vault_authority]]],
     )?;
+
+    let signer_seeds: &[u8] = &[ctx.bumps.lock_vault_authority];
+    let signer_seeds_arr: &[&[u8]] = &[crate::AUTH_SEED.as_bytes(), signer_seeds];
+    let signer_seeds_refs: &[&[&[u8]]] = &[signer_seeds_arr];
+
+    let cpi_ctx = CpiContext::new_with_signer(
+    ctx.accounts.token_program.to_account_info(),
+    CloseAccount {
+        account: ctx.accounts.lp_lock_vault.to_account_info(),
+        destination: ctx.accounts.owner.to_account_info(),
+        authority: ctx.accounts.lock_vault_authority.to_account_info(),
+    },
+    signer_seeds_refs,);
+
+    anchor_spl::token::close_account(cpi_ctx)?;
 
     emit!(
         LpUnlockEvent {

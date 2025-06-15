@@ -66,6 +66,7 @@ pub struct CollectFees<'info> {
     pub lp_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
+        mut,
         seeds = [
             LP_LOCK_COUNTER_SEED.as_bytes(),
             owner.key().as_ref(),
@@ -158,6 +159,7 @@ pub struct CollectFees<'info> {
 
 pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
     let user_lock = &mut ctx.accounts.user_lp_lock;
+    let lp_lock_counter = &mut ctx.accounts.lp_lock_counter;
 
     require_eq!(
         user_lock.is_unlocked,
@@ -241,8 +243,19 @@ pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
         ErrorCode::ZeroTradingTokens
     );
 
+    lp_lock_counter.total_lock_amount = lp_lock_counter
+    .total_lock_amount
+    .checked_sub(user_lock.lock_amount)
+    .ok_or(ErrorCode::UnderflowError)?;
+
     // update user lock
     user_lock.lock_amount = updated_principal_lp_tokens;
+    
+    lp_lock_counter.total_lock_amount = lp_lock_counter
+    .total_lock_amount
+    .checked_add(user_lock.lock_amount)
+    .ok_or(ErrorCode::Overflow)?;
+
     user_lock.token_0_fees_collected = user_lock
         .token_0_fees_collected
         .checked_add(token_0_amount)
