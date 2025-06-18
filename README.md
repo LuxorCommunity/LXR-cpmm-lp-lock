@@ -456,3 +456,8 @@ Potential areas for expansion:
 - **Cross-pool strategies**: Support for multiple pool types
 
 This contract provides a robust foundation for LP token locking while maintaining fee earning capabilities, essential for modern DeFi applications requiring both liquidity commitment and yield generation.
+
+---
+### Special Thanks
+This smart contract was developed with the incredible support of [Vishesh Sachdev](https://github.com/vishesh0123).  
+Reliable, secure, and efficient — exactly what the Luxor ecosystem needed.
